@@ -3,16 +3,23 @@
 if(window.__toolDock)return;
 window.__toolDock=true;
 
-/* -------------------------
-DOCK UI
-------------------------- */
+/* ----------------
+html2canvas loader
+---------------- */
+
+const sc=document.createElement("script");
+sc.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+document.head.appendChild(sc);
+
+/* ----------------
+dock
+---------------- */
 
 const host=document.createElement("div");
 host.style.position="fixed";
-host.style.bottom="20px";
-host.style.right="20px";
+host.style.bottom="18px";
+host.style.right="18px";
 host.style.zIndex="2147483647";
-
 document.body.appendChild(host);
 
 const root=host.attachShadow({mode:"open"});
@@ -23,38 +30,38 @@ root.innerHTML=`
 
 #dock{
 display:flex;
-gap:8px;
-padding:8px;
-background:rgba(28,28,30,.75);
+gap:6px;
+padding:6px;
+background:rgba(30,30,30,.8);
 backdrop-filter:blur(16px);
-border-radius:14px;
-box-shadow:0 10px 25px rgba(0,0,0,.45);
+border-radius:12px;
+box-shadow:0 10px 25px rgba(0,0,0,.5);
 }
 
 button{
-width:38px;
-height:38px;
+width:34px;
+height:34px;
 border:none;
-border-radius:10px;
-background:linear-gradient(145deg,#3a3a3c,#1c1c1e);
+border-radius:9px;
+background:linear-gradient(145deg,#3a3a3a,#1e1e1e);
+cursor:pointer;
 display:flex;
 align-items:center;
 justify-content:center;
-cursor:pointer;
 transition:transform .15s;
 }
 
 svg{
-width:18px;
-height:18px;
-stroke:white;
+width:16px;
+height:16px;
+stroke:#fff;
 stroke-width:2;
 fill:none;
 }
 
-#brightness{
+#panel{
 position:absolute;
-bottom:60px;
+bottom:52px;
 right:0;
 background:#1c1c1e;
 padding:8px;
@@ -62,179 +69,221 @@ border-radius:10px;
 display:none;
 }
 
-input[type=range]{
-width:120px;
-}
-
 </style>
 
 <div id="dock">
 
-<button id="shot">
-<svg viewBox="0 0 24 24">
-<rect x="3" y="7" width="18" height="14" rx="2"/>
-<circle cx="12" cy="14" r="3"/>
-</svg>
-</button>
+<button id="shot"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="14"/><circle cx="12" cy="14" r="3"/></svg></button>
 
-<button id="light">
-<svg viewBox="0 0 24 24">
-<circle cx="12" cy="12" r="4"/>
-</svg>
-</button>
+<button id="scroll"><svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
 
-<button id="close">
-<svg viewBox="0 0 24 24">
-<line x1="6" y1="6" x2="18" y2="18"/>
-<line x1="18" y1="6" x2="6" y2="18"/>
-</svg>
-</button>
+<button id="dark"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg></button>
+
+<button id="ads"><svg viewBox="0 0 24 24"><line x1="4" y1="4" x2="20" y2="20"/></svg></button>
+
+<button id="close"><svg viewBox="0 0 24 24"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
 
 </div>
 
-<div id="brightness">
+<div id="panel">
 <input id="range" type="range" min="0" max="0.8" step="0.02">
 </div>
 
 `;
 
-/* -------------------------
+/* ----------------
 暗さ
-------------------------- */
+---------------- */
 
-const darkLayer=document.createElement("div");
-darkLayer.style.position="fixed";
-darkLayer.style.inset="0";
-darkLayer.style.background="#000";
-darkLayer.style.opacity="0";
-darkLayer.style.pointerEvents="none";
-darkLayer.style.zIndex="2147483646";
+const dark=document.createElement("div");
+dark.style.position="fixed";
+dark.style.inset="0";
+dark.style.background="#000";
+dark.style.opacity="0";
+dark.style.pointerEvents="none";
+dark.style.zIndex="2147483646";
+document.body.appendChild(dark);
 
-document.body.appendChild(darkLayer);
-
-root.getElementById("light").onclick=()=>{
-const panel=root.getElementById("brightness");
-panel.style.display=panel.style.display=="block"?"none":"block";
+root.getElementById("dark").onclick=()=>{
+const p=root.getElementById("panel");
+p.style.display=p.style.display=="block"?"none":"block";
 };
 
 root.getElementById("range").oninput=e=>{
-darkLayer.style.opacity=e.target.value;
+dark.style.opacity=e.target.value;
 };
 
-/* -------------------------
-スクリーンショット
-------------------------- */
+/* ----------------
+スクショ
+---------------- */
 
-root.getElementById("shot").onclick=()=>{
+root.getElementById("shot").onclick=async()=>{
 
-const flash=document.createElement("div");
-flash.style.position="fixed";
-flash.style.inset="0";
-flash.style.background="#fff";
-flash.style.opacity="0.8";
-flash.style.zIndex="2147483647";
-flash.style.pointerEvents="none";
-flash.style.transition="opacity .4s";
+if(!window.html2canvas){
+alert("読み込み中");
+return;
+}
 
-document.body.appendChild(flash);
+const canvas=await html2canvas(document.body);
 
-setTimeout(()=>flash.style.opacity="0",100);
-setTimeout(()=>flash.remove(),400);
-
-alert("ブラウザ制限で完全スクショ不可\nCtrl+Shift+Sなどを使用");
+const a=document.createElement("a");
+a.download="screenshot.png";
+a.href=canvas.toDataURL();
+a.click();
 
 };
 
-/* -------------------------
-Dock拡大（マウス近いと大きく）
-------------------------- */
+/* ----------------
+ページ全体スクショ
+---------------- */
 
-const buttons=[...root.querySelectorAll("button")];
+root.getElementById("scroll").onclick=async()=>{
+
+window.scrollTo(0,0);
+
+const canvas=await html2canvas(document.body,{
+scrollY:-window.scrollY,
+windowWidth:document.body.scrollWidth,
+windowHeight:document.body.scrollHeight
+});
+
+const a=document.createElement("a");
+a.download="fullpage.png";
+a.href=canvas.toDataURL();
+a.click();
+
+};
+
+/* ----------------
+広告ブロック
+---------------- */
+
+root.getElementById("ads").onclick=()=>{
+
+const ads=[
+'[id*="ad"]',
+'[class*="ad"]',
+'iframe[src*="ads"]',
+'iframe[src*="doubleclick"]',
+'[class*="banner"]'
+];
+
+ads.forEach(s=>{
+document.querySelectorAll(s).forEach(e=>e.remove());
+});
+
+};
+
+/* ----------------
+Mac Dock 拡大
+---------------- */
+
+const btns=[...root.querySelectorAll("button")];
 
 document.addEventListener("mousemove",e=>{
 
-buttons.forEach(b=>{
+btns.forEach(b=>{
 
-const rect=b.getBoundingClientRect();
+const r=b.getBoundingClientRect();
+const dx=e.clientX-(r.left+r.width/2);
+const dy=e.clientY-(r.top+r.height/2);
 
-const dx=e.clientX-(rect.left+rect.width/2);
-const dy=e.clientY-(rect.top+rect.height/2);
+const d=Math.sqrt(dx*dx+dy*dy);
+const s=Math.max(1,1.6-(d/200));
 
-const dist=Math.sqrt(dx*dx+dy*dy);
-
-const scale=Math.max(1,1.6-(dist/200));
-
-b.style.transform=`scale(${scale})`;
+b.style.transform="scale("+s+")";
 
 });
 
 });
 
-/* -------------------------
-テキスト選択ツール
-------------------------- */
+/* ----------------
+画像保存
+---------------- */
 
-const selMenu=document.createElement("div");
+document.addEventListener("contextmenu",e=>{
 
-selMenu.style.position="absolute";
-selMenu.style.background="#1c1c1e";
-selMenu.style.color="white";
-selMenu.style.padding="6px";
-selMenu.style.borderRadius="8px";
-selMenu.style.display="none";
-selMenu.style.gap="6px";
-selMenu.style.zIndex="2147483647";
+if(e.target.tagName=="IMG"){
 
-selMenu.innerHTML=`<button id="g">Google</button> <button id="s">要約</button>`;
+if(confirm("画像を保存しますか？")){
 
-document.body.appendChild(selMenu);
+const a=document.createElement("a");
+a.href=e.target.src;
+a.download="image";
+a.click();
 
-document.addEventListener("mouseup",e=>{
-
-const text=getSelection().toString().trim();
-
-if(text.length>2){
-
-selMenu.style.display="flex";
-selMenu.style.left=e.pageX+"px";
-selMenu.style.top=e.pageY+"px";
-
-}else{
-
-selMenu.style.display="none";
+}
 
 }
 
 });
 
-/* Google */
+/* ----------------
+翻訳
+---------------- */
 
-selMenu.querySelector("#g").onclick=()=>{
-const t=getSelection().toString();
-open("https://google.com/search?q="+encodeURIComponent(t));
+document.addEventListener("mouseup",e=>{
+
+const t=getSelection().toString().trim();
+
+if(t.length>2){
+
+const box=document.createElement("div");
+
+box.style.position="absolute";
+box.style.left=e.pageX+"px";
+box.style.top=e.pageY+"px";
+box.style.background="#1c1c1e";
+box.style.color="white";
+box.style.padding="6px";
+box.style.borderRadius="8px";
+box.style.zIndex="2147483647";
+
+box.innerHTML="翻訳";
+
+box.onclick=()=>{
+
+open("https://translate.google.com/?text="+encodeURIComponent(t));
+
 };
 
-/* 要約 */
+document.body.appendChild(box);
 
-selMenu.querySelector("#s").onclick=()=>{
+setTimeout(()=>box.remove(),4000);
 
-const t=getSelection().toString();
+}
 
-const s=t.split(/[。.!?]/).slice(0,2).join("。");
+});
 
-alert("要約:\n"+s);
+/* ----------------
+動画DL
+---------------- */
 
-};
+document.addEventListener("contextmenu",e=>{
 
-/* -------------------------
-終了
-------------------------- */
+if(e.target.tagName=="VIDEO"){
+
+if(confirm("動画ダウンロード？")){
+
+const a=document.createElement("a");
+a.href=e.target.currentSrc;
+a.download="video";
+a.click();
+
+}
+
+}
+
+});
+
+/* ----------------
+close
+---------------- */
 
 root.getElementById("close").onclick=()=>{
 
 host.remove();
-darkLayer.remove();
-selMenu.remove();
+dark.remove();
 window.__toolDock=false;
 
 };
