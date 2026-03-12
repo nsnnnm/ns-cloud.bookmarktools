@@ -5,16 +5,16 @@ window.__toolDock=true;
 
 /* html2canvas */
 
-const s=document.createElement("script");
-s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-document.head.appendChild(s);
+const sc=document.createElement("script");
+sc.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+document.head.appendChild(sc);
 
-/* dock */
+/* host */
 
 const host=document.createElement("div");
 host.style.position="fixed";
-host.style.bottom="16px";
-host.style.right="16px";
+host.style.bottom="22px";
+host.style.right="22px";
 host.style.zIndex="2147483647";
 document.body.appendChild(host);
 
@@ -25,34 +25,85 @@ root.innerHTML=`
 <style>
 
 #dock{
+
 display:flex;
-gap:6px;
-padding:6px;
-background:rgba(30,30,30,.85);
-backdrop-filter:blur(14px);
-border-radius:12px;
-box-shadow:0 8px 22px rgba(0,0,0,.45);
+gap:8px;
+padding:8px 10px;
+
+background:rgba(255,255,255,0.08);
+backdrop-filter:blur(20px) saturate(180%);
+-webkit-backdrop-filter:blur(20px) saturate(180%);
+
+border-radius:16px;
+
+border:1px solid rgba(255,255,255,0.15);
+
+box-shadow:
+0 10px 30px rgba(0,0,0,0.35),
+inset 0 1px 0 rgba(255,255,255,0.25);
+
+transition:transform .25s ease;
+
 }
 
+/* button */
+
 button{
-width:32px;
-height:32px;
+
+width:34px;
+height:34px;
+
+border-radius:10px;
 border:none;
-border-radius:8px;
-background:linear-gradient(145deg,#3a3a3a,#1e1e1e);
-cursor:pointer;
+
+background:rgba(255,255,255,0.12);
+
 display:flex;
 align-items:center;
 justify-content:center;
-transition:transform .15s;
+
+cursor:pointer;
+
+transition:
+transform .18s ease,
+background .18s ease,
+box-shadow .18s ease;
+
 }
 
+/* hover */
+
+button:hover{
+
+background:rgba(255,255,255,0.2);
+
+box-shadow:
+0 6px 14px rgba(0,0,0,0.3),
+inset 0 1px 0 rgba(255,255,255,0.3);
+
+}
+
+/* click */
+
+button:active{
+
+transform:scale(.9);
+
+}
+
+/* icon */
+
 svg{
-width:16px;
-height:16px;
+
+width:17px;
+height:17px;
+
 stroke:white;
 stroke-width:2;
 fill:none;
+
+opacity:.95;
+
 }
 
 </style>
@@ -97,7 +148,7 @@ fill:none;
 
 `;
 
-/* dock zoom */
+/* Dock magnification */
 
 const btns=[...root.querySelectorAll("button")];
 
@@ -106,12 +157,15 @@ document.addEventListener("mousemove",e=>{
 btns.forEach(b=>{
 
 const r=b.getBoundingClientRect();
+
 const dx=e.clientX-(r.left+r.width/2);
 const dy=e.clientY-(r.top+r.height/2);
-const d=Math.sqrt(dx*dx+dy*dy);
-const s=Math.max(1,1.6-(d/200));
 
-b.style.transform="scale("+s+")";
+const d=Math.sqrt(dx*dx+dy*dy);
+
+const scale=Math.max(1,1.7-(d/180));
+
+b.style.transform="scale("+scale+")";
 
 });
 
@@ -120,6 +174,8 @@ b.style.transform="scale("+s+")";
 /* screenshot */
 
 root.getElementById("cap").onclick=async()=>{
+
+if(!window.html2canvas)return;
 
 const canvas=await html2canvas(document.body);
 
@@ -134,7 +190,7 @@ root.getElementById("area").onclick=()=>{
 const box=document.createElement("div");
 
 box.style.position="fixed";
-box.style.border="2px dashed red";
+box.style.border="2px dashed #4da3ff";
 box.style.zIndex="2147483647";
 
 let startX,startY;
@@ -212,7 +268,7 @@ dot.style.left=e.pageX+"px";
 dot.style.top=e.pageY+"px";
 dot.style.width="6px";
 dot.style.height="6px";
-dot.style.background="red";
+dot.style.background="#ff3b30";
 dot.style.borderRadius="50%";
 dot.style.zIndex="2147483646";
 
@@ -241,8 +297,10 @@ document.querySelectorAll(s).forEach(e=>e.remove());
 function download(canvas){
 
 const a=document.createElement("a");
+
 a.download="capture.png";
 a.href=canvas.toDataURL();
+
 a.click();
 
 }
