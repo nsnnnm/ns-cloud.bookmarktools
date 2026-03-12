@@ -1,137 +1,242 @@
 (function(){
 
-if(window.__toolDock)return;
-window.__toolDock=true;
+if(window.toolDockLoaded)return;
+window.toolDockLoaded=true;
 
-/* load html2canvas */
+/* -------------------------
+   CSS
+------------------------- */
 
-const sc=document.createElement("script");
-sc.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
-document.head.appendChild(sc);
-
-/* host */
-
-const host=document.createElement("div");
-host.style.position="fixed";
-host.style.bottom="20px";
-host.style.right="20px";
-host.style.zIndex="2147483647";
-document.body.appendChild(host);
-
-const root=host.attachShadow({mode:"open"});
-
-/* UI */
-
-root.innerHTML=`
-
-<style>
-
-#dock{
-
+const css=`
+#tdock{
+position:fixed;
+right:20px;
+bottom:20px;
 display:flex;
 gap:10px;
-padding:8px 12px;
+padding:10px 14px;
+z-index:999999999;
 
-background:
-linear-gradient(
+background:linear-gradient(
 180deg,
 rgba(255,255,255,.25),
-rgba(255,255,255,.05)
+rgba(255,255,255,.08)
 );
 
-backdrop-filter:blur(30px) saturate(180%);
--webkit-backdrop-filter:blur(30px) saturate(180%);
+backdrop-filter:blur(28px) saturate(180%);
+-webkit-backdrop-filter:blur(28px) saturate(180%);
 
-border-radius:18px;
-
+border-radius:20px;
 border:1px solid rgba(255,255,255,.35);
 
 box-shadow:
 0 20px 40px rgba(0,0,0,.35),
 inset 0 2px 6px rgba(255,255,255,.4);
 
+font-family:sans-serif;
 }
 
-button{
-
-width:36px;
-height:36px;
-
-border:none;
-border-radius:10px;
-
-background:rgba(255,255,255,.15);
-
+.tdock-btn{
+width:42px;
+height:42px;
 display:flex;
 align-items:center;
 justify-content:center;
+border-radius:12px;
+
+background:rgba(255,255,255,.15);
+border:1px solid rgba(255,255,255,.3);
 
 cursor:pointer;
-
-transition:.15s;
-
+transition:all .15s ease;
 }
 
-button:hover{
-
+.tdock-btn:hover{
 background:rgba(255,255,255,.3);
-
 }
 
-svg{
-
-width:18px;
-height:18px;
-
-stroke:white;
-stroke-width:2;
-fill:none;
-
+#tdim{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+opacity:0;
+pointer-events:none;
+z-index:999999998;
 }
 
-</style>
+#tdimRange{
+position:fixed;
+right:30px;
+bottom:80px;
+z-index:999999999;
+}
 
-<div id="dock">
+.tselpanel{
+position:absolute;
+z-index:999999999;
+display:flex;
+gap:6px;
+padding:6px;
+border-radius:10px;
+background:rgba(30,30,30,.9);
+color:white;
+font-size:12px;
+}
 
-<button id="cap" title="Screenshot">
-<svg viewBox="0 0 24 24">
-<rect x="3" y="7" width="18" height="14" rx="2"/>
-<circle cx="12" cy="14" r="3"/>
-</svg>
-</button>
+.tselbtn{
+padding:4px 6px;
+cursor:pointer;
+border-radius:6px;
+background:rgba(255,255,255,.1);
+}
 
-<button id="area" title="Area capture">
-<svg viewBox="0 0 24 24">
-<rect x="4" y="4" width="16" height="16"/>
-</svg>
-</button>
+.tselbtn:hover{
+background:rgba(255,255,255,.3);
+}
 
-<button id="mark" title="Marker">
-<svg viewBox="0 0 24 24">
-<path d="M3 21l3-1 12-12-2-2L4 18z"/>
-</svg>
-</button>
-
-<button id="ads" title="AdBlock">
-<svg viewBox="0 0 24 24">
-<circle cx="12" cy="12" r="9"/>
-<path d="M4 4l16 16"/>
-</svg>
-</button>
-
-<button id="close" title="Close">
-<svg viewBox="0 0 24 24">
-<line x1="6" y1="6" x2="18" y2="18"/>
-<line x1="18" y1="6" x2="6" y2="18"/>
-</svg>
-</button>
-
-</div>
+.imgdl{
+position:absolute;
+z-index:999999999;
+background:rgba(0,0,0,.6);
+color:white;
+font-size:12px;
+padding:3px 5px;
+border-radius:6px;
+cursor:pointer;
+}
 `;
 
-/* Mac Dock magnification */
+const style=document.createElement("style");
+style.innerHTML=css;
+document.head.appendChild(style);
 
-const btns=[...root.querySelectorAll("button")];
+/* -------------------------
+   dim overlay
+------------------------- */
+
+const dim=document.createElement("div");
+dim.id="tdim";
+document.body.appendChild(dim);
+
+const dimRange=document.createElement("input");
+dimRange.type="range";
+dimRange.min=0;
+dimRange.max=80;
+dimRange.id="tdimRange";
+dimRange.oninput=e=>{
+dim.style.opacity=e.target.value/100;
+};
+document.body.appendChild(dimRange);
+
+/* -------------------------
+   Dock
+------------------------- */
+
+const dock=document.createElement("div");
+dock.id="tdock";
+document.body.appendChild(dock);
+
+function btn(name,fn){
+const b=document.createElement("div");
+b.className="tdock-btn";
+b.innerText=name;
+b.onclick=fn;
+dock.appendChild(b);
+return b;
+}
+
+/* -------------------------
+   Screenshot
+------------------------- */
+
+async function screenshot(){
+
+if(!window.html2canvas){
+
+const s=document.createElement("script");
+s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
+document.head.appendChild(s);
+
+await new Promise(r=>s.onload=r);
+}
+
+html2canvas(document.body,{
+scale:.9,
+useCORS:true,
+logging:false,
+windowWidth:window.innerWidth,
+windowHeight:window.innerHeight
+}).then(canvas=>{
+
+const a=document.createElement("a");
+a.href=canvas.toDataURL();
+a.download="screenshot.png";
+a.click();
+
+});
+}
+
+/* -------------------------
+   Marker
+------------------------- */
+
+function marker(){
+document.body.contentEditable=true;
+}
+
+/* -------------------------
+   Adblock
+------------------------- */
+
+function adblock(){
+
+const rules=[
+"[class*=ad]",
+"[id*=ad]",
+"iframe[src*=ads]",
+".sponsor",
+".adsbygoogle"
+];
+
+rules.forEach(r=>{
+document.querySelectorAll(r).forEach(e=>e.remove());
+});
+}
+
+/* -------------------------
+   Translate
+------------------------- */
+
+function translate(){
+location.href="https://translate.google.com/translate?u="+location.href;
+}
+
+/* -------------------------
+   Image search
+------------------------- */
+
+function imageSearch(){
+window.open("https://images.google.com/");
+}
+
+/* -------------------------
+   Buttons
+------------------------- */
+
+btn("Shot",screenshot);
+btn("Mark",marker);
+btn("Ad",adblock);
+btn("Tran",translate);
+btn("Img",imageSearch);
+
+/* -------------------------
+   Dock magnify
+------------------------- */
+
+const btns=[...dock.children];
 
 document.addEventListener("mousemove",e=>{
 
@@ -144,7 +249,7 @@ const dy=e.clientY-(r.top+r.height/2);
 
 const dist=Math.sqrt(dx*dx+dy*dy);
 
-const scale=1+Math.max(0,1-(dist/160))*0.9;
+const scale=1+Math.max(0,1-(dist/160))*0.8;
 
 b.style.transform=`scale(${scale})`;
 
@@ -152,227 +257,59 @@ b.style.transform=`scale(${scale})`;
 
 });
 
-/* lightweight screenshot */
+/* -------------------------
+   Selection panel
+------------------------- */
 
-root.getElementById("cap").onclick=async()=>{
+document.addEventListener("mouseup",()=>{
 
-if(!window.html2canvas)return;
+const text=getSelection().toString().trim();
+if(!text)return;
 
-const canvas=await html2canvas(document.body,{
-scale:0.8,
-windowWidth:window.innerWidth,
-windowHeight:window.innerHeight,
-useCORS:true,
-logging:false
-});
+const rect=getSelection().getRangeAt(0).getBoundingClientRect();
 
-openEditor(canvas);
+const panel=document.createElement("div");
+panel.className="tselpanel";
 
-};
-
-/* area screenshot */
-
-root.getElementById("area").onclick=()=>{
-
-const box=document.createElement("div");
-
-box.style.position="fixed";
-box.style.border="2px dashed #4da3ff";
-box.style.zIndex="2147483647";
-
-let startX,startY;
-
-document.onmousedown=e=>{
-
-startX=e.clientX;
-startY=e.clientY;
-
-document.body.appendChild(box);
-
-document.onmousemove=e2=>{
-
-box.style.left=Math.min(e2.clientX,startX)+"px";
-box.style.top=Math.min(e2.clientY,startY)+"px";
-
-box.style.width=Math.abs(e2.clientX-startX)+"px";
-box.style.height=Math.abs(e2.clientY-startY)+"px";
-
-};
-
-document.onmouseup=async()=>{
-
-const rect=box.getBoundingClientRect();
-
-const canvas=await html2canvas(document.body,{scale:0.8});
-
-const crop=document.createElement("canvas");
-
-crop.width=rect.width;
-crop.height=rect.height;
-
-crop.getContext("2d").drawImage(
-canvas,
-rect.left,
-rect.top,
-rect.width,
-rect.height,
-0,
-0,
-rect.width,
-rect.height
-);
-
-openEditor(crop);
-
-box.remove();
-
-};
-
-};
-
-};
-
-/* screenshot editor */
-
-function openEditor(canvas){
-
-const wrap=document.createElement("div");
-
-wrap.style.position="fixed";
-wrap.style.inset="0";
-wrap.style.background="rgba(0,0,0,.85)";
-wrap.style.zIndex="2147483647";
-
-const editor=document.createElement("canvas");
-
-editor.width=canvas.width;
-editor.height=canvas.height;
-
-editor.getContext("2d").drawImage(canvas,0,0);
-
-wrap.appendChild(editor);
-
-document.body.appendChild(wrap);
-
-let draw=false;
-
-editor.onmousedown=()=>draw=true;
-editor.onmouseup=()=>draw=false;
-
-editor.onmousemove=e=>{
-
-if(!draw)return;
-
-const ctx=editor.getContext("2d");
-
-ctx.fillStyle="red";
-
-ctx.fillRect(e.offsetX,e.offsetY,5,5);
-
-};
-
-wrap.onclick=e=>{
-
-if(e.target===wrap){
-
-const a=document.createElement("a");
-a.download="capture.png";
-a.href=editor.toDataURL();
-a.click();
-
-wrap.remove();
-
+function sbtn(name,fn){
+const b=document.createElement("div");
+b.className="tselbtn";
+b.innerText=name;
+b.onclick=fn;
+panel.appendChild(b);
 }
 
-};
+sbtn("Google",()=>window.open("https://google.com/search?q="+encodeURIComponent(text)));
+sbtn("Wiki",()=>window.open("https://ja.wikipedia.org/wiki/"+encodeURIComponent(text)));
+sbtn("AI",()=>window.open("https://www.google.com/search?q="+encodeURIComponent(text+" 要約")));
 
-}
+panel.style.left=rect.left+"px";
+panel.style.top=rect.bottom+5+"px";
 
-/* marker */
+document.body.appendChild(panel);
 
-let marker=false;
-
-root.getElementById("mark").onclick=()=>{
-
-marker=!marker;
-
-};
-
-document.addEventListener("mousemove",e=>{
-
-if(!marker)return;
-
-const dot=document.createElement("div");
-
-dot.style.position="absolute";
-dot.style.left=e.pageX+"px";
-dot.style.top=e.pageY+"px";
-
-dot.style.width="6px";
-dot.style.height="6px";
-
-dot.style.background="red";
-dot.style.borderRadius="50%";
-
-dot.style.zIndex="2147483646";
-
-document.body.appendChild(dot);
+setTimeout(()=>panel.remove(),5000);
 
 });
 
-/* safe adblock */
+/* -------------------------
+   Image hover DL
+------------------------- */
 
-root.getElementById("ads").onclick=()=>{
+document.querySelectorAll("img").forEach(img=>{
 
-const selectors=[
-
-'iframe[src*="doubleclick"]',
-'iframe[src*="googlesyndication"]',
-'iframe[src*="adservice"]',
-
-'[id^="ad-"]',
-'[class^="ad-"]',
-'[class*="-ad-"]',
-
-'[class*="sponsor"]'
-
-];
-
-selectors.forEach(s=>{
-document.querySelectorAll(s).forEach(e=>e.remove());
-});
-
-};
-
-/* image hover download */
-
-document.addEventListener("mouseover",e=>{
-
-if(e.target.tagName!=="IMG")return;
-
-const img=e.target;
-
-const btn=document.createElement("div");
-
-btn.innerText="↓";
-
-btn.style.position="absolute";
-btn.style.background="rgba(0,0,0,.7)";
-btn.style.color="white";
-btn.style.padding="4px 6px";
-btn.style.borderRadius="6px";
-btn.style.fontSize="12px";
-btn.style.cursor="pointer";
-btn.style.zIndex="2147483647";
+img.addEventListener("mouseenter",()=>{
 
 const r=img.getBoundingClientRect();
 
-btn.style.left=r.right-24+"px";
-btn.style.top=r.top+"px";
+const b=document.createElement("div");
+b.className="imgdl";
+b.innerText="DL";
 
-document.body.appendChild(btn);
+b.style.left=r.right-30+"px";
+b.style.top=r.top+"px";
 
-btn.onclick=()=>{
+b.onclick=()=>{
 
 const a=document.createElement("a");
 a.href=img.src;
@@ -381,13 +318,20 @@ a.click();
 
 };
 
-img._dlbtn=btn;
-
-img.onmouseleave=()=>btn.remove();
+document.body.appendChild(b);
+img._dl=b;
 
 });
 
-/* youtube ad skip */
+img.addEventListener("mouseleave",()=>{
+img._dl?.remove();
+});
+
+});
+
+/* -------------------------
+   YouTube Ad Skip
+------------------------- */
 
 setInterval(()=>{
 
@@ -398,14 +342,5 @@ const btn=document.querySelector(
 if(btn)btn.click();
 
 },1000);
-
-/* close */
-
-root.getElementById("close").onclick=()=>{
-
-host.remove();
-window.__toolDock=false;
-
-};
 
 })();
