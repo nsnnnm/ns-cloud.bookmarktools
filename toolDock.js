@@ -9,7 +9,7 @@ const s=document.createElement("script");
 s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
 document.head.appendChild(s);
 
-/* ---------------- dock ---------------- */
+/* dock */
 
 const host=document.createElement("div");
 host.style.position="fixed";
@@ -41,22 +41,63 @@ border:none;
 border-radius:8px;
 background:linear-gradient(145deg,#3a3a3a,#1e1e1e);
 cursor:pointer;
-color:white;
-font-size:14px;
+display:flex;
+align-items:center;
+justify-content:center;
 transition:transform .15s;
+}
+
+svg{
+width:16px;
+height:16px;
+stroke:white;
+stroke-width:2;
+fill:none;
 }
 
 </style>
 
 <div id="dock">
 
-<button id="cap">📸</button> <button id="area">✂</button> <button id="mark">🖊</button> <button id="ads">🚫</button> <button id="close">✕</button>
+<button id="cap">
+<svg viewBox="0 0 24 24">
+<rect x="3" y="7" width="18" height="14" rx="2"/>
+<circle cx="12" cy="14" r="3"/>
+</svg>
+</button>
+
+<button id="area">
+<svg viewBox="0 0 24 24">
+<rect x="4" y="4" width="16" height="16"/>
+<path d="M4 9h5M9 4v5"/>
+</svg>
+</button>
+
+<button id="mark">
+<svg viewBox="0 0 24 24">
+<path d="M3 21l3-1 12-12-2-2L4 18l-1 3z"/>
+</svg>
+</button>
+
+<button id="ads">
+<svg viewBox="0 0 24 24">
+<path d="M4 4l16 16"/>
+<circle cx="12" cy="12" r="9"/>
+</svg>
+</button>
+
+<button id="close">
+<svg viewBox="0 0 24 24">
+<line x1="6" y1="6" x2="18" y2="18"/>
+<line x1="18" y1="6" x2="6" y2="18"/>
+</svg>
+</button>
 
 </div>
 
 `;
 
-/* ---------------- dock zoom ---------------- */
+/* dock zoom */
 
 const btns=[...root.querySelectorAll("button")];
 
@@ -76,16 +117,17 @@ b.style.transform="scale("+s+")";
 
 });
 
-/* ---------------- screenshot ---------------- */
+/* screenshot */
 
 root.getElementById("cap").onclick=async()=>{
 
 const canvas=await html2canvas(document.body);
+
 download(canvas);
 
 };
 
-/* ---------------- area screenshot ---------------- */
+/* area screenshot */
 
 root.getElementById("area").onclick=()=>{
 
@@ -98,6 +140,7 @@ box.style.zIndex="2147483647";
 let startX,startY;
 
 document.onmousedown=e=>{
+
 startX=e.clientX;
 startY=e.clientY;
 
@@ -119,6 +162,7 @@ const rect=box.getBoundingClientRect();
 const canvas=await html2canvas(document.body);
 
 const crop=document.createElement("canvas");
+
 crop.width=rect.width;
 crop.height=rect.height;
 
@@ -140,13 +184,14 @@ download(crop);
 
 box.remove();
 document.onmousemove=null;
-};
 
 };
 
 };
 
-/* ---------------- marker ---------------- */
+};
+
+/* marker */
 
 let draw=false;
 
@@ -175,7 +220,7 @@ document.body.appendChild(dot);
 
 });
 
-/* ---------------- adblock ---------------- */
+/* adblock */
 
 root.getElementById("ads").onclick=()=>{
 
@@ -193,55 +238,6 @@ document.querySelectorAll(s).forEach(e=>e.remove());
 
 };
 
-/* ---------------- AI summary ---------------- */
-
-document.addEventListener("mouseup",e=>{
-
-const t=getSelection().toString().trim();
-
-if(t.length>40){
-
-const s=t.split(/[。.!?]/).slice(0,2).join("。");
-
-const box=document.createElement("div");
-
-box.style.position="absolute";
-box.style.left=e.pageX+"px";
-box.style.top=e.pageY+"px";
-box.style.background="#111";
-box.style.color="white";
-box.style.padding="6px";
-box.style.borderRadius="8px";
-box.style.zIndex="2147483647";
-
-box.innerText="要約: "+s;
-
-document.body.appendChild(box);
-
-setTimeout(()=>box.remove(),5000);
-
-}
-
-});
-
-/* ---------------- image search ---------------- */
-
-document.addEventListener("contextmenu",e=>{
-
-if(e.target.tagName==="IMG"){
-
-if(confirm("画像検索しますか？")){
-
-open("https://www.google.com/searchbyimage?image_url="+encodeURIComponent(e.target.src));
-
-}
-
-}
-
-});
-
-/* ---------------- helper ---------------- */
-
 function download(canvas){
 
 const a=document.createElement("a");
@@ -251,7 +247,7 @@ a.click();
 
 }
 
-/* ---------------- close ---------------- */
+/* close */
 
 root.getElementById("close").onclick=()=>{
 
