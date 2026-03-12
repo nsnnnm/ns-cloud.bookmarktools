@@ -1,17 +1,17 @@
 (function(){
 
-if(window.toolDockLoaded)return;
-window.toolDockLoaded=true;
+if(window.toolDockV7)return;
+window.toolDockV7=true;
 
-/* -------------------------
-   CSS
-------------------------- */
+/* ----------------
+ Liquid Glass CSS
+---------------- */
 
 const css=`
 #tdock{
 position:fixed;
-right:20px;
-bottom:20px;
+right:18px;
+bottom:18px;
 display:flex;
 gap:10px;
 padding:10px 14px;
@@ -19,40 +19,51 @@ z-index:999999999;
 
 background:linear-gradient(
 180deg,
-rgba(255,255,255,.25),
+rgba(255,255,255,.28),
 rgba(255,255,255,.08)
 );
 
-backdrop-filter:blur(28px) saturate(180%);
--webkit-backdrop-filter:blur(28px) saturate(180%);
+backdrop-filter:blur(30px) saturate(180%);
+-webkit-backdrop-filter:blur(30px) saturate(180%);
 
-border-radius:20px;
+border-radius:22px;
 border:1px solid rgba(255,255,255,.35);
 
 box-shadow:
-0 20px 40px rgba(0,0,0,.35),
-inset 0 2px 6px rgba(255,255,255,.4);
+0 20px 45px rgba(0,0,0,.35),
+inset 0 2px 8px rgba(255,255,255,.5);
 
-font-family:sans-serif;
+font-family:system-ui;
 }
 
 .tdock-btn{
-width:42px;
-height:42px;
+
+width:44px;
+height:44px;
+
 display:flex;
 align-items:center;
 justify-content:center;
-border-radius:12px;
 
-background:rgba(255,255,255,.15);
-border:1px solid rgba(255,255,255,.3);
+border-radius:14px;
+
+background:rgba(255,255,255,.18);
+
+border:1px solid rgba(255,255,255,.35);
 
 cursor:pointer;
-transition:all .15s ease;
+
+transition:all .18s ease;
 }
 
 .tdock-btn:hover{
-background:rgba(255,255,255,.3);
+background:rgba(255,255,255,.35);
+}
+
+.tdock-btn svg{
+width:22px;
+height:22px;
+fill:white;
 }
 
 #tdim{
@@ -69,8 +80,8 @@ z-index:999999998;
 
 #tdimRange{
 position:fixed;
-right:30px;
-bottom:80px;
+right:25px;
+bottom:85px;
 z-index:999999999;
 }
 
@@ -80,10 +91,14 @@ z-index:999999999;
 display:flex;
 gap:6px;
 padding:6px;
+
 border-radius:10px;
-background:rgba(30,30,30,.9);
+
+background:rgba(40,40,40,.9);
 color:white;
 font-size:12px;
+
+backdrop-filter:blur(10px);
 }
 
 .tselbtn{
@@ -100,12 +115,20 @@ background:rgba(255,255,255,.3);
 .imgdl{
 position:absolute;
 z-index:999999999;
+
 background:rgba(0,0,0,.6);
 color:white;
-font-size:12px;
-padding:3px 5px;
+
+font-size:11px;
+
+padding:3px 6px;
+
 border-radius:6px;
 cursor:pointer;
+}
+
+.marker-highlight{
+background:yellow;
 }
 `;
 
@@ -113,9 +136,9 @@ const style=document.createElement("style");
 style.innerHTML=css;
 document.head.appendChild(style);
 
-/* -------------------------
-   dim overlay
-------------------------- */
+/* ----------------
+ Dim overlay
+---------------- */
 
 const dim=document.createElement("div");
 dim.id="tdim";
@@ -126,31 +149,57 @@ dimRange.type="range";
 dimRange.min=0;
 dimRange.max=80;
 dimRange.id="tdimRange";
+
 dimRange.oninput=e=>{
 dim.style.opacity=e.target.value/100;
 };
+
 document.body.appendChild(dimRange);
 
-/* -------------------------
-   Dock
-------------------------- */
+/* ----------------
+ Dock
+---------------- */
 
 const dock=document.createElement("div");
 dock.id="tdock";
 document.body.appendChild(dock);
 
-function btn(name,fn){
+function btn(svg,fn){
+
 const b=document.createElement("div");
 b.className="tdock-btn";
-b.innerText=name;
+
+b.innerHTML=svg;
+
 b.onclick=fn;
+
 dock.appendChild(b);
+
 return b;
+
 }
 
-/* -------------------------
-   Screenshot
-------------------------- */
+/* ----------------
+ Icons
+---------------- */
+
+const icons={
+
+shot:`<svg viewBox="0 0 24 24"><path d="M4 5h4l2-2h4l2 2h4v14H4z"/></svg>`,
+
+marker:`<svg viewBox="0 0 24 24"><path d="M3 17l6 4 12-12-6-6z"/></svg>`,
+
+ad:`<svg viewBox="0 0 24 24"><path d="M3 3l18 18M10 10h4v4h-4z"/></svg>`,
+
+translate:`<svg viewBox="0 0 24 24"><path d="M12 4l4 4-4 4M4 12h16"/></svg>`,
+
+image:`<svg viewBox="0 0 24 24"><path d="M21 19V5H3v14z"/></svg>`
+
+};
+
+/* ----------------
+ Screenshot
+---------------- */
 
 async function screenshot(){
 
@@ -161,6 +210,7 @@ s.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
 document.head.appendChild(s);
 
 await new Promise(r=>s.onload=r);
+
 }
 
 html2canvas(document.body,{
@@ -177,64 +227,95 @@ a.download="screenshot.png";
 a.click();
 
 });
+
 }
 
-/* -------------------------
-   Marker
-------------------------- */
+/* ----------------
+ Marker
+---------------- */
 
 function marker(){
-document.body.contentEditable=true;
+
+document.addEventListener("mouseup",()=>{
+
+const sel=getSelection();
+
+if(sel.toString().length>0){
+
+const span=document.createElement("span");
+span.className="marker-highlight";
+
+const range=sel.getRangeAt(0);
+
+range.surroundContents(span);
+
 }
 
-/* -------------------------
-   Adblock
-------------------------- */
+},{once:true});
+
+}
+
+/* ----------------
+ Adblock
+---------------- */
 
 function adblock(){
 
 const rules=[
 "[class*=ad]",
 "[id*=ad]",
+".adsbygoogle",
 "iframe[src*=ads]",
-".sponsor",
-".adsbygoogle"
+".sponsor"
 ];
 
 rules.forEach(r=>{
-document.querySelectorAll(r).forEach(e=>e.remove());
+
+document.querySelectorAll(r).forEach(e=>{
+
+if(e.innerText.length<30) e.remove();
+
 });
+
+});
+
 }
 
-/* -------------------------
-   Translate
-------------------------- */
+/* ----------------
+ Translate
+---------------- */
 
 function translate(){
-location.href="https://translate.google.com/translate?u="+location.href;
+
+window.open(
+"https://translate.google.com/translate?u="+location.href
+);
+
 }
 
-/* -------------------------
-   Image search
-------------------------- */
+/* ----------------
+ Image search
+---------------- */
 
 function imageSearch(){
+
 window.open("https://images.google.com/");
+
 }
 
-/* -------------------------
-   Buttons
-------------------------- */
+/* ----------------
+ Buttons
+---------------- */
 
-btn("Shot",screenshot);
-btn("Mark",marker);
-btn("Ad",adblock);
-btn("Tran",translate);
-btn("Img",imageSearch);
+btn(icons.shot,screenshot);
+btn(icons.marker,marker);
+btn(icons.ad,adblock);
+btn(icons.translate,translate);
+btn(icons.image,imageSearch);
 
-/* -------------------------
-   Dock magnify
-------------------------- */
+/* ----------------
+ Dock magnify
+---------------- */
 
 const btns=[...dock.children];
 
@@ -249,7 +330,7 @@ const dy=e.clientY-(r.top+r.height/2);
 
 const dist=Math.sqrt(dx*dx+dy*dy);
 
-const scale=1+Math.max(0,1-(dist/160))*0.8;
+const scale=1+Math.max(0,1-(dist/160))*0.9;
 
 b.style.transform=`scale(${scale})`;
 
@@ -257,9 +338,9 @@ b.style.transform=`scale(${scale})`;
 
 });
 
-/* -------------------------
-   Selection panel
-------------------------- */
+/* ----------------
+ Selection search
+---------------- */
 
 document.addEventListener("mouseup",()=>{
 
@@ -272,29 +353,33 @@ const panel=document.createElement("div");
 panel.className="tselpanel";
 
 function sbtn(name,fn){
+
 const b=document.createElement("div");
 b.className="tselbtn";
 b.innerText=name;
+
 b.onclick=fn;
+
 panel.appendChild(b);
+
 }
 
 sbtn("Google",()=>window.open("https://google.com/search?q="+encodeURIComponent(text)));
 sbtn("Wiki",()=>window.open("https://ja.wikipedia.org/wiki/"+encodeURIComponent(text)));
-sbtn("AI",()=>window.open("https://www.google.com/search?q="+encodeURIComponent(text+" 要約")));
+sbtn("要約",()=>window.open("https://www.google.com/search?q="+encodeURIComponent(text+" 要約")));
 
 panel.style.left=rect.left+"px";
-panel.style.top=rect.bottom+5+"px";
+panel.style.top=rect.bottom+6+"px";
 
 document.body.appendChild(panel);
 
-setTimeout(()=>panel.remove(),5000);
+setTimeout(()=>panel.remove(),6000);
 
 });
 
-/* -------------------------
-   Image hover DL
-------------------------- */
+/* ----------------
+ Image hover download
+---------------- */
 
 document.querySelectorAll("img").forEach(img=>{
 
@@ -306,7 +391,7 @@ const b=document.createElement("div");
 b.className="imgdl";
 b.innerText="DL";
 
-b.style.left=r.right-30+"px";
+b.style.left=r.right-32+"px";
 b.style.top=r.top+"px";
 
 b.onclick=()=>{
@@ -319,19 +404,22 @@ a.click();
 };
 
 document.body.appendChild(b);
+
 img._dl=b;
 
 });
 
 img.addEventListener("mouseleave",()=>{
+
 img._dl?.remove();
-});
 
 });
 
-/* -------------------------
-   YouTube Ad Skip
-------------------------- */
+});
+
+/* ----------------
+ YouTube Ad Skip
+---------------- */
 
 setInterval(()=>{
 
