@@ -3,7 +3,7 @@
 if(window.__toolDock)return;
 window.__toolDock=true;
 
-/* html2canvas */
+/* load html2canvas */
 
 const sc=document.createElement("script");
 sc.src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js";
@@ -16,11 +16,11 @@ host.style.position="fixed";
 host.style.bottom="20px";
 host.style.right="20px";
 host.style.zIndex="2147483647";
-host.style.cursor="grab";
-
 document.body.appendChild(host);
 
 const root=host.attachShadow({mode:"open"});
+
+/* UI */
 
 root.innerHTML=`
 
@@ -29,32 +29,38 @@ root.innerHTML=`
 #dock{
 
 display:flex;
-gap:8px;
-padding:8px 10px;
+gap:10px;
+padding:8px 12px;
 
-background:rgba(255,255,255,0.08);
-backdrop-filter:blur(20px) saturate(180%);
--webkit-backdrop-filter:blur(20px);
+background:
+linear-gradient(
+180deg,
+rgba(255,255,255,.25),
+rgba(255,255,255,.05)
+);
 
-border-radius:16px;
+backdrop-filter:blur(30px) saturate(180%);
+-webkit-backdrop-filter:blur(30px) saturate(180%);
 
-border:1px solid rgba(255,255,255,0.15);
+border-radius:18px;
+
+border:1px solid rgba(255,255,255,.35);
 
 box-shadow:
-0 10px 30px rgba(0,0,0,0.35),
-inset 0 1px 0 rgba(255,255,255,0.25);
+0 20px 40px rgba(0,0,0,.35),
+inset 0 2px 6px rgba(255,255,255,.4);
 
 }
 
 button{
 
-width:34px;
-height:34px;
+width:36px;
+height:36px;
 
-border-radius:10px;
 border:none;
+border-radius:10px;
 
-background:rgba(255,255,255,0.12);
+background:rgba(255,255,255,.15);
 
 display:flex;
 align-items:center;
@@ -62,13 +68,13 @@ justify-content:center;
 
 cursor:pointer;
 
-transition:all .15s;
+transition:.15s;
 
 }
 
 button:hover{
 
-background:rgba(255,255,255,0.25);
+background:rgba(255,255,255,.3);
 
 }
 
@@ -88,84 +94,83 @@ fill:none;
 <div id="dock">
 
 <button id="cap" title="Screenshot">
-
 <svg viewBox="0 0 24 24">
 <rect x="3" y="7" width="18" height="14" rx="2"/>
 <circle cx="12" cy="14" r="3"/>
 </svg>
-
 </button>
 
 <button id="area" title="Area capture">
-
 <svg viewBox="0 0 24 24">
 <rect x="4" y="4" width="16" height="16"/>
 </svg>
-
 </button>
 
 <button id="mark" title="Marker">
-
 <svg viewBox="0 0 24 24">
 <path d="M3 21l3-1 12-12-2-2L4 18z"/>
 </svg>
-
 </button>
 
 <button id="ads" title="AdBlock">
-
 <svg viewBox="0 0 24 24">
-<path d="M4 4l16 16"/>
 <circle cx="12" cy="12" r="9"/>
+<path d="M4 4l16 16"/>
 </svg>
-
 </button>
 
 <button id="close" title="Close">
-
 <svg viewBox="0 0 24 24">
 <line x1="6" y1="6" x2="18" y2="18"/>
 <line x1="18" y1="6" x2="6" y2="18"/>
 </svg>
-
 </button>
 
 </div>
-
 `;
 
-/* dock drag */
+/* Mac Dock magnification */
 
-let drag=false;
+const btns=[...root.querySelectorAll("button")];
 
-host.onmousedown=e=>{
-drag=true;
-};
+document.addEventListener("mousemove",e=>{
 
-document.onmouseup=()=>{
-drag=false;
-};
+btns.forEach(b=>{
 
-document.onmousemove=e=>{
+const r=b.getBoundingClientRect();
 
-if(!drag)return;
+const dx=e.clientX-(r.left+r.width/2);
+const dy=e.clientY-(r.top+r.height/2);
 
-host.style.left=e.clientX+"px";
-host.style.top=e.clientY+"px";
+const dist=Math.sqrt(dx*dx+dy*dy);
 
-};
+const scale=1+Math.max(0,1-(dist/160))*0.9;
 
-/* screenshot */
+b.style.transform=`scale(${scale})`;
+
+});
+
+});
+
+/* lightweight screenshot */
 
 root.getElementById("cap").onclick=async()=>{
 
-const canvas=await html2canvas(document.body);
+if(!window.html2canvas)return;
+
+const canvas=await html2canvas(document.body,{
+scale:0.8,
+windowWidth:window.innerWidth,
+windowHeight:window.innerHeight,
+useCORS:true,
+logging:false
+});
 
 openEditor(canvas);
 
 };
 
-/* area capture */
+/* area screenshot */
 
 root.getElementById("area").onclick=()=>{
 
@@ -198,7 +203,7 @@ document.onmouseup=async()=>{
 
 const rect=box.getBoundingClientRect();
 
-const canvas=await html2canvas(document.body);
+const canvas=await html2canvas(document.body,{scale:0.8});
 
 const crop=document.createElement("canvas");
 
@@ -252,7 +257,6 @@ document.body.appendChild(wrap);
 let draw=false;
 
 editor.onmousedown=()=>draw=true;
-
 editor.onmouseup=()=>draw=false;
 
 editor.onmousemove=e=>{
@@ -272,10 +276,8 @@ wrap.onclick=e=>{
 if(e.target===wrap){
 
 const a=document.createElement("a");
-
 a.download="capture.png";
 a.href=editor.toDataURL();
-
 a.click();
 
 wrap.remove();
@@ -337,19 +339,71 @@ const selectors=[
 ];
 
 selectors.forEach(s=>{
-
 document.querySelectorAll(s).forEach(e=>e.remove());
-
 });
 
 };
+
+/* image hover download */
+
+document.addEventListener("mouseover",e=>{
+
+if(e.target.tagName!=="IMG")return;
+
+const img=e.target;
+
+const btn=document.createElement("div");
+
+btn.innerText="↓";
+
+btn.style.position="absolute";
+btn.style.background="rgba(0,0,0,.7)";
+btn.style.color="white";
+btn.style.padding="4px 6px";
+btn.style.borderRadius="6px";
+btn.style.fontSize="12px";
+btn.style.cursor="pointer";
+btn.style.zIndex="2147483647";
+
+const r=img.getBoundingClientRect();
+
+btn.style.left=r.right-24+"px";
+btn.style.top=r.top+"px";
+
+document.body.appendChild(btn);
+
+btn.onclick=()=>{
+
+const a=document.createElement("a");
+a.href=img.src;
+a.download="image";
+a.click();
+
+};
+
+img._dlbtn=btn;
+
+img.onmouseleave=()=>btn.remove();
+
+});
+
+/* youtube ad skip */
+
+setInterval(()=>{
+
+const btn=document.querySelector(
+".ytp-ad-skip-button,.ytp-skip-ad-button"
+);
+
+if(btn)btn.click();
+
+},1000);
 
 /* close */
 
 root.getElementById("close").onclick=()=>{
 
 host.remove();
-
 window.__toolDock=false;
 
 };
